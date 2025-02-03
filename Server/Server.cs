@@ -2,12 +2,10 @@ using System;
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
-using System.Threading.Tasks;
 using Server.Commands;
 
 namespace Server;
 
-public delegate int ConnectedClientsDelegate();
 
 public class Server : IDisposable
 {
@@ -16,7 +14,6 @@ public class Server : IDisposable
     private readonly Dictionary<string, ClientHandler> _clients = [];
     private readonly TcpListener _listener;
     private readonly CancellationTokenSource _cts = new();
-    // private readonly BlockingCollection<string> _messageQueue = [];
     private readonly BlockingCollection<Message> _messageQueue = [];
 
     public Server(ServerConfig config)
@@ -45,6 +42,16 @@ public class Server : IDisposable
             {
                 foreach (var message in _messageQueue.GetConsumingEnumerable(_cts.Token))
                 {
+                    if (message.Recipient == "Server")
+                    {
+                        if (message.Content == "Disconnect" && 
+                            _clients.TryGetValue(message.Sender, out var client))
+                        {
+                            await DisconnectClient(client);
+                        }
+                        continue;
+                    }
+
                     if (message.Recipient == "All")
                         await BroadcastMessageAsync(message);
                     else if (_clients.TryGetValue(message.Recipient, out var client)) {
@@ -66,8 +73,6 @@ public class Server : IDisposable
             Dispose();
         }
     }
-
-    public ConnectedClientsDelegate ConnectedClients => () => _clients.Count;
 
     public void Dispose()
     {
@@ -91,7 +96,7 @@ public class Server : IDisposable
     private void InitializeCommands()
     {
         _commandHandler.RegisterCommand(new ClearCommand());
-        _commandHandler.RegisterCommand(new UsersCommand(ConnectedClients));
+        _commandHandler.RegisterCommand(new UsersCommand(() => _clients.Keys.Count));
         _commandHandler.RegisterCommand(new SendToCommand());
         _commandHandler.RegisterCommand(new ExitCommand());
         _commandHandler.RegisterCommand(new HelpCommand(_commandHandler.GetCommands()));

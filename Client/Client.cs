@@ -7,6 +7,7 @@ public class Client(string host, int port)
 {
     private readonly string _host = host;
     private readonly int _port = port;
+    private readonly CancellationTokenSource _cts = new();
 
     public async Task StartAsync()
     {
@@ -19,15 +20,28 @@ public class Client(string host, int port)
 
         _ = Task.Run(async () =>
         {
-            while (true)
+            try
             {
-                var message = await reader.ReadLineAsync();
-                if (message == null) break;
-                Console.WriteLine(message);
+                while (!_cts.IsCancellationRequested)
+                {
+                    var message = await reader.ReadLineAsync();
+                    if (message == null)
+                    {
+                        Console.WriteLine("Server disconnected.");
+                        _cts.Cancel();
+                        break;
+                    }
+                    Console.WriteLine(message);
+                }
+            }
+            catch (IOException)
+            {
+                Console.WriteLine("Lost connection to server.");
+                _cts.Cancel();
             }
         });
 
-        while (true)
+        while (!_cts.IsCancellationRequested)
         {
             var message = Console.ReadLine();
             if (message == null) break;

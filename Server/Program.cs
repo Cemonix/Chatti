@@ -17,10 +17,7 @@ namespace Server
                 Environment.Exit(1);
             }
             
-            // TODO: Figure out main loop for server with other threads
             // TODO: Client disconnection handling
-            // TODO: Client to client communication
-            //       - figure out how to specify the recipient of a message
             // TODO: Group chat
             // TODO: Message end-to-end encryption
             // TODO: File transfer

@@ -88,13 +88,14 @@ public class ClientHandler : IDisposable
                             await SendMessageAsync(new Message("Server", Username, response, DateTime.Now));
                             break;
                         }
-                        
+
                         _messageQueue.Add(
                             new Message(Username, recipient, response, DateTime.Now)
                         );
                         break;
                     case CommandName.Exit:
-                        await SendMessageAsync(new Message("Server", Username, response, DateTime.Now));
+                        await SendMessageAsync(new Message(Username, Username, response, DateTime.Now));
+                        _messageQueue.Add(new Message(Username, "Server", "Disconnect", DateTime.Now));
                         _cts.Cancel();
                         break;
                     default:
