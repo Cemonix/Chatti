@@ -96,7 +96,7 @@ public class Server : IDisposable
     private void InitializeCommands()
     {
         _commandHandler.RegisterCommand(new ClearCommand());
-        _commandHandler.RegisterCommand(new UsersCommand(() => _clients.Keys.Count));
+        _commandHandler.RegisterCommand(new UsersCountCommand(() => _clients.Keys.Count));
         _commandHandler.RegisterCommand(new SendToCommand());
         _commandHandler.RegisterCommand(new ExitCommand());
         _commandHandler.RegisterCommand(new HelpCommand(_commandHandler.GetCommands()));
