@@ -23,5 +23,11 @@
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen",
         }
+    ],
+    "compounds": [
+        {
+            "name": "Server + Two Clients",
+            "configurations": ["Server", "Client", "Client"]
+        }
     ]
 }
