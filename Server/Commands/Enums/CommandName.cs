@@ -6,6 +6,7 @@ public enum CommandName
     Users,
     Clear,
     SendTo,
+    SendFile,
     Exit,
     Unknown
 }

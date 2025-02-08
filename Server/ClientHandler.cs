@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Net.Sockets;
 using Server.Commands;
+using Shared;
 
 namespace Server;
 
@@ -32,7 +33,7 @@ public class ClientHandler : IDisposable
         try
         {
             await SendMessageAsync(
-                new Message("Server", Username, "Welcome! Type /help for available commands.", DateTime.Now)
+                new Message("Server", Username, "Welcome! Type /help for available commands.")
             );
 
             while (!_cts.Token.IsCancellationRequested)
@@ -40,12 +41,12 @@ public class ClientHandler : IDisposable
                 var message = await _reader.ReadLineAsync();
                 if (message == null) break;
 
-                if (CommandHandler.IsCommand(message))
+                if (MessageParser.IsCommand(message))
                 {
                     await HandleCommandAsync(message);
                 }
                 else
-                    _messageQueue.Add(new Message(Username, "All", message, DateTime.Now));
+                    _messageQueue.Add(new Message(Username, "All", message));
             }
         }
         catch (IOException)
@@ -62,7 +63,7 @@ public class ClientHandler : IDisposable
     {
         try
         {
-            await _writer.WriteLineAsync($"{message.Timestamp} {message.Sender}: {message.Content}");
+            await _writer.WriteLineAsync(message.ToString());
         }
         catch (Exception ex)
         {
@@ -79,27 +80,36 @@ public class ClientHandler : IDisposable
             var response = _commandHandler.ExecuteCommand(commandName, parameters);
 
             if (response != null) {
+                string? recipient;
                 switch (commandName)
                 {
                     case CommandName.SendTo:
-                        string recipient = SendToCommand.GetRecipient(parameters);
+                        recipient = MessageParser.GetRecipient(message);
                         if (recipient == null)
                         {
-                            await SendMessageAsync(new Message("Server", Username, response, DateTime.Now));
+                            await SendMessageAsync(new Message("Server", Username, response));
                             break;
                         }
 
-                        _messageQueue.Add(
-                            new Message(Username, recipient, response, DateTime.Now)
-                        );
+                        _messageQueue.Add(new Message(Username, recipient, response));
+                        break;
+                    case CommandName.SendFile:
+                        recipient = MessageParser.GetRecipient(message);
+                        if (recipient == null)
+                        {
+                            await SendMessageAsync(new Message("Server", Username, response));
+                            break;
+                        }
+
+                        _messageQueue.Add(new Message(Username, recipient, response));
                         break;
                     case CommandName.Exit:
-                        await SendMessageAsync(new Message(Username, Username, response, DateTime.Now));
-                        _messageQueue.Add(new Message(Username, "Server", "Disconnect", DateTime.Now));
+                        await SendMessageAsync(new Message(Username, Username, response));
+                        _messageQueue.Add(new Message(Username, "Server", "Disconnect"));
                         _cts.Cancel();
                         break;
                     default:
-                        await SendMessageAsync(new Message("Server", Username, response, DateTime.Now));
+                        await SendMessageAsync(new Message("Server", Username, response));
                         break;
                 }
 

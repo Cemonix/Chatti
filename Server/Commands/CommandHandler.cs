@@ -1,4 +1,5 @@
 using System;
+using Shared;
 using Server.Commands;
 using Server.Interfaces;
 
@@ -15,23 +16,20 @@ public class CommandHandler
 
     public ICollection<ICommand> GetCommands() => _commands.Values;
 
-    public static bool IsCommand(string message)
+    public static CommandName GetCommandName(string command)
     {
-        var content = ParseMessage(message);
-        return content.StartsWith('/');
+        if (!MessageParser.IsCommand(command))
+            return CommandName.Unknown;
+
+        string[] commandContent = MessageParser.Parse(command);
+        string commandName = RemoveCommandPrefix(commandContent[0]);
+        return Enum.TryParse(commandName, true, out CommandName result) ? result : CommandName.Unknown;
     }
 
-    public static CommandName GetCommandName(string message)
+    public static string[] GetCommandParameters(string command)
     {
-        var content = ParseMessage(message);
-        content = RemoveCommandPrefix(content);
-        return Enum.TryParse(content.Split(' ')[0], true, out CommandName commandName) ? commandName : CommandName.Unknown;
-    }
-
-    public static string[] GetCommandParameters(string message)
-    {
-        var content = ParseMessage(message);
-        return content.StartsWith('/') ? [.. content.Split(' ').Skip(1)] : [];
+        var commandContent = MessageParser.Parse(command);
+        return MessageParser.IsCommand(commandContent[0]) ? [.. commandContent.Skip(1)] : [];
     }
 
     public string? ExecuteCommand(CommandName commandName, string[] parameters)
@@ -43,14 +41,8 @@ public class CommandHandler
  
     }
 
-    private static string ParseMessage(string message)
-    {
-        string[] parts = message.Split(": ", 2);
-        return parts.Length < 2 ? message : parts[1];
-    }
-
     private static string RemoveCommandPrefix(string message)
     {
-        return message.StartsWith('/') ? message[1..] : message;
+        return MessageParser.IsCommand(message) ? message[1..] : message;
     }
 }

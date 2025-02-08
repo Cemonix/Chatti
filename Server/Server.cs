@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using Server.Commands;
+using Shared;
 
 namespace Server;
 
@@ -98,6 +99,7 @@ public class Server : IDisposable
         _commandHandler.RegisterCommand(new ClearCommand());
         _commandHandler.RegisterCommand(new UsersCountCommand(() => _clients.Keys.Count));
         _commandHandler.RegisterCommand(new SendToCommand());
+        _commandHandler.RegisterCommand(new SendFileCommand());
         _commandHandler.RegisterCommand(new ExitCommand());
         _commandHandler.RegisterCommand(new HelpCommand(_commandHandler.GetCommands()));
     }
@@ -118,7 +120,7 @@ public class Server : IDisposable
             try
             {
                 Logger<Server>.LogInfo($"Client connected: {username}. Total clients: {_clients.Count}");
-                await BroadcastMessageAsync(new Message("Server", "All", $"{username} joined the chat", DateTime.Now));
+                await BroadcastMessageAsync(new Message("Server", "All", $"{username} joined the chat"));
 
                 _ = clientHandler.HandleCommunicationAsync();
             }
@@ -147,7 +149,7 @@ public class Server : IDisposable
             if (message == null)
                 break;
             
-            if (CommandHandler.IsCommand(message))
+            if (MessageParser.IsCommand(message))
             {
                 var response = _commandHandler.ExecuteCommand(
                     CommandHandler.GetCommandName(message),
@@ -160,7 +162,7 @@ public class Server : IDisposable
             {
                 string serverMessage = $"Server: {message}";
                 Console.WriteLine(serverMessage);
-                _messageQueue.Add(new Message("Server", "All", message, DateTime.Now));
+                _messageQueue.Add(new Message("Server", "All", message));
             }
         }
     }
@@ -169,7 +171,7 @@ public class Server : IDisposable
     {
         if (_clients.Remove(client.Username)) {
             Logger<Server>.LogInfo($"{client.Username} disconnected. Total clients: {_clients.Count}");
-            await BroadcastMessageAsync(new Message("Server", "All", $"{client.Username} left the chat", DateTime.Now));
+            await BroadcastMessageAsync(new Message("Server", "All", $"{client.Username} left the chat"));
             client.Dispose();
         }
     }
