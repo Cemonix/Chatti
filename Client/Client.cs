@@ -1,5 +1,6 @@
 using System;
 using System.Net.Sockets;
+using Shared;
 
 namespace Client;
 
@@ -31,6 +32,10 @@ public class Client(string host, int port)
                         _cts.Cancel();
                         break;
                     }
+
+                    // TODO: Handle file transfer
+                    // - parse the message - figure out how to differentiate between a message and a file
+                    // - save the file to disk
                     Console.WriteLine(message);
                 }
             }
@@ -43,9 +48,39 @@ public class Client(string host, int port)
 
         while (!_cts.IsCancellationRequested)
         {
+            // TODO: Readline escapes special characters - need to write own readline
             var message = Console.ReadLine();
             if (message == null) break;
+
+            if (MessageParser.IsFileTransfer(message))
+            {
+                var recipient = MessageParser.GetRecipient(message);
+                var filePath = MessageParser.GetFilePath(message);
+                if (recipient == null)
+                {
+                    Console.WriteLine("Invalid recipient.");
+                    continue;
+                }
+                
+                if (filePath == null)
+                {
+                    Console.WriteLine("Invalid file path.");
+                    continue;
+                }
+
+                Shared.File? file = Shared.File.Load(recipient, filePath);
+                if (file == null)
+                {
+                    Console.WriteLine("File not found.");
+                    continue;
+                }
+
+                await writer.WriteLineAsync(file.ToString());
+                continue;
+            }
+            
             await writer.WriteLineAsync(message);
         }
     }
+
 }
