@@ -1,7 +1,6 @@
 using System;
-using Server.Enums;
 
-namespace Server;
+namespace Shared;
 
 public class Logger<T> ()
 {

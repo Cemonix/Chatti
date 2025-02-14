@@ -1,5 +1,6 @@
 using System;
 using Server.Interfaces;
+using Shared;
 
 namespace Server.Commands;
 
@@ -17,9 +18,9 @@ public class ClearCommand : ICommand
         }
         catch (Exception ex)
         {
-            #if DEBUG
+#if DEBUG
             Logger<ClearCommand>.LogDebug($"{ex.Message}");
-            #endif
+#endif
             return "Failed to clear chat";
         }
 

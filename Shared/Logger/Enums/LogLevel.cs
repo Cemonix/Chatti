@@ -1,4 +1,4 @@
-namespace Server.Enums;
+namespace Shared;
 
 public enum LogLevel
 {

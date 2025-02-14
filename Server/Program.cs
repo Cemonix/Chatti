@@ -13,14 +13,13 @@ namespace Server
             }
             catch (Exception ex)
             {
-                Logger<Program>.LogError($"Critical error: {ex.Message}");
+                Shared.Logger<Program>.LogError($"Critical error: {ex.Message}");
                 Environment.Exit(1);
             }
             
-            // TODO: Client disconnection handling
+            // TODO: File transfer
             // TODO: Group chat
             // TODO: Message end-to-end encryption
-            // TODO: File transfer
             // TODO: Voice chat
         }
     }
