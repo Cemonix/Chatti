@@ -9,6 +9,7 @@ public class Client(string host, int port)
     private readonly string _host = host;
     private readonly int _port = port;
     private readonly CancellationTokenSource _cts = new();
+    private readonly string homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
 
     public async Task StartAsync()
     {
@@ -33,26 +34,54 @@ public class Client(string host, int port)
                         break;
                     }
 
-                    // TODO: Handle file transfer
-                    // - parse the message - figure out how to differentiate between a message and a file
-                    // - save the file to disk
+                    if (MessageParser.IsFileTransfer(message))
+                    {
+                        string fileData = MessageParser.GetFileData(message);
+                        if (fileData == string.Empty)
+                        {
+                            Console.WriteLine("Invalid file data received.");
+                            continue;
+                        }
+
+                        string fileName = MessageParser.GetFileName(message);
+                        if (fileName == string.Empty)
+                        {
+                            Console.WriteLine("Invalid file name received.");
+                            continue;
+                        }
+
+                        string filePath = Path.Combine(homeDirectory, fileName);
+                        await System.IO.File.WriteAllBytesAsync(filePath, Convert.FromBase64String(fileData));
+                        Console.WriteLine($"File {fileName} received and saved to home directory.");
+                        continue;
+                    }
+
                     Console.WriteLine(message);
                 }
             }
-            catch (IOException)
+            catch (IOException ex)
             {
+#if DEBUG
+                Logger<Client>.LogInfo($"IO exception: {ex.Message}");
+#endif
                 Console.WriteLine("Lost connection to server.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error: {ex.Message}");
+            }
+            finally
+            {
                 _cts.Cancel();
             }
         });
 
         while (!_cts.IsCancellationRequested)
         {
-            // TODO: Readline escapes special characters - need to write own readline
             var message = Console.ReadLine();
             if (message == null) break;
 
-            if (MessageParser.IsFileTransfer(message))
+            if (MessageParser.IsFileTransferCommand(message))
             {
                 var recipient = MessageParser.GetRecipient(message);
                 var filePath = MessageParser.GetFilePath(message);

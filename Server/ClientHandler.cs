@@ -101,6 +101,9 @@ public class ClientHandler : IDisposable
                             break;
                         }
 
+                        string[] splitResponse = response.Split(' ');
+                        string fileData = $"{splitResponse[0]} file={splitResponse[1]}";
+
                         _messageQueue.Add(new Message(Username, recipient, response));
                         break;
                     case CommandName.Exit:
